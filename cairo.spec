@@ -1,23 +1,17 @@
-%define pixman_version 0.18.4
+%define pixman_version 0.30.0
 %define freetype_version 2.1.9
 %define fontconfig_version 2.2.95
 
 Summary:	A 2D graphics library
 Name:		cairo
-Version:	1.12.14
-Release:	6%{?dist}
+Version:	1.14.2
+Release:	1%{?dist}
 URL:		http://cairographics.org
-#VCS:		git:git://git.freedesktop.org/git/cairo
-#Source0:	http://cairographics.org/snapshots/%{name}-%{version}.tar.gz
 Source0:	http://cairographics.org/releases/%{name}-%{version}.tar.xz
 License:	LGPLv2 or MPLv1.1
 Group:		System Environment/Libraries
 
-Patch0:		0001-xlib-Don-t-crash-when-swapping-a-0-sized-glyph.patch
-Patch1:		0002-xcb-Don-t-crash-when-swapping-a-0-sized-glyph.patch
-Patch2:		0003-mempool-Reduce-an-assert-into-an-error-return-for-ge.patch
-Patch3:         0004-font-Generate-PDFs-with-correct-font-names.patch
-Patch4:         cairo-multilib.patch
+Patch3:         cairo-multilib.patch
 
 BuildRequires: pkgconfig
 BuildRequires: libXrender-devel
@@ -45,12 +39,7 @@ through the X Render Extension or OpenGL).
 %package devel
 Summary: Development files for cairo
 Group: Development/Libraries
-Requires: %{name} = %{version}-%{release}
-Requires: libXrender-devel
-Requires: libpng-devel
-Requires: pixman-devel >= %{pixman_version}
-Requires: freetype-devel >= %{freetype_version}
-Requires: fontconfig-devel >= %{fontconfig_version}
+Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description devel
 Cairo is a 2D graphics library designed to provide high-quality display
@@ -62,7 +51,7 @@ needed for developing software which uses the cairo graphics library.
 %package gobject
 Summary: GObject bindings for cairo
 Group: System Environment/Libraries
-Requires: %{name} = %{version}-%{release}
+Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description gobject
 Cairo is a 2D graphics library designed to provide high-quality display
@@ -74,8 +63,8 @@ integrate well with the GObject object system used by GNOME.
 %package gobject-devel
 Summary: Development files for cairo-gobject
 Group: Development/Libraries
-Requires: %{name}-devel = %{version}-%{release}
-Requires: %{name}-gobject = %{version}-%{release}
+Requires: %{name}-devel%{?_isa} = %{version}-%{release}
+Requires: %{name}-gobject%{?_isa} = %{version}-%{release}
 
 %description gobject-devel
 Cairo is a 2D graphics library designed to provide high-quality display
@@ -97,11 +86,7 @@ This package contains tools for working with the cairo graphics library.
 
 %prep
 %setup -q
-%patch0 -p1 -b .xlib-swap
-%patch1 -p1 -b .xcb-swap
-%patch2 -p1 -b .get_buddy-assert
-%patch3 -p1 -b .font-name
-%patch4 -p1 -b .multilib
+%patch3 -p1 -b .multilib
 
 %build
 %configure --disable-static	\
@@ -185,6 +170,10 @@ rm $RPM_BUILD_ROOT%{_libdir}/*.la
 %{_libdir}/cairo/
 
 %changelog
+* Tue Apr 28 2015 Benjamin Otte <otte@redhat.com> - 1.14.2-1
+- Update to 1.14.2
+- Resolves: #1174435
+
 * Thu Feb  6 2014 Benjamin Otte <otte@redhat.com> - 1.12.14-6
 - Add patch to properly escape font names in PDFs
 
