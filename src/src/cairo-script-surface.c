@@ -1111,7 +1111,8 @@ attach_snapshot (cairo_script_context_t *ctx,
     _cairo_surface_init (&surface->base,
 			 &script_snapshot_backend,
 			 &ctx->base,
-			 source->content);
+			 source->content,
+			 source->is_vector);
 
     _cairo_output_stream_printf (ctx->stream,
 				 "dup /s%d exch def ",
@@ -1201,7 +1202,8 @@ static cairo_status_t
 _write_image_surface (cairo_output_stream_t *output,
 		      const cairo_image_surface_t *image)
 {
-    int stride, row, width;
+    int row, width;
+    ptrdiff_t stride;
     uint8_t row_stack[CAIRO_STACK_BUFFER_SIZE];
     uint8_t *rowdata;
     uint8_t *data;
@@ -3648,7 +3650,8 @@ _cairo_script_surface_create_internal (cairo_script_context_t *ctx,
     _cairo_surface_init (&surface->base,
 			 &_cairo_script_surface_backend,
 			 &ctx->base,
-			 content);
+			 content,
+			 TRUE); /* is_vector */
 
     _cairo_surface_wrapper_init (&surface->wrapper, passthrough);
 

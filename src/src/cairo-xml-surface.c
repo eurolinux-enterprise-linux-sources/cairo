@@ -36,7 +36,7 @@
 
 /* This surface is intended to produce a verbose, hierarchical, DAG XML file
  * representing a single surface. It is intended to be used by debuggers,
- * such as cairo-sphinx, or by application test-suites that what a log of
+ * such as cairo-sphinx, or by application test-suites that want a log of
  * operations.
  */
 
@@ -1105,7 +1105,8 @@ _cairo_xml_surface_create_internal (cairo_device_t *device,
     _cairo_surface_init (&surface->base,
 			 &_cairo_xml_surface_backend,
 			 device,
-			 content);
+			 content,
+			 TRUE); /* is_vector */
 
     surface->width = width;
     surface->height = height;
