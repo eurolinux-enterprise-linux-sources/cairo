@@ -2,14 +2,14 @@
 %define freetype_version 2.1.9
 %define fontconfig_version 2.2.95
 
-Summary:	A 2D graphics library
 Name:		cairo
-Version:	1.14.2
-Release:	1%{?dist}
+Version:	1.14.8
+Release:	2%{?dist}
+Summary:	A 2D graphics library
+
+License:	LGPLv2 or MPLv1.1
 URL:		http://cairographics.org
 Source0:	http://cairographics.org/releases/%{name}-%{version}.tar.xz
-License:	LGPLv2 or MPLv1.1
-Group:		System Environment/Libraries
 
 Patch3:         cairo-multilib.patch
 
@@ -38,7 +38,6 @@ through the X Render Extension or OpenGL).
 
 %package devel
 Summary: Development files for cairo
-Group: Development/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description devel
@@ -50,7 +49,6 @@ needed for developing software which uses the cairo graphics library.
 
 %package gobject
 Summary: GObject bindings for cairo
-Group: System Environment/Libraries
 Requires: %{name}%{?_isa} = %{version}-%{release}
 
 %description gobject
@@ -62,7 +60,6 @@ integrate well with the GObject object system used by GNOME.
 
 %package gobject-devel
 Summary: Development files for cairo-gobject
-Group: Development/Libraries
 Requires: %{name}-devel%{?_isa} = %{version}-%{release}
 Requires: %{name}-gobject%{?_isa} = %{version}-%{release}
 
@@ -75,7 +72,6 @@ needed for developing software which uses the cairo Gobject library.
 
 %package tools
 Summary: Development tools for cairo
-Group: Development/Tools
 
 %description tools
 Cairo is a 2D graphics library designed to provide high-quality display
@@ -104,8 +100,8 @@ sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 make V=1 %{?_smp_mflags}
 
 %install
-make install V=1 DESTDIR=$RPM_BUILD_ROOT
-rm $RPM_BUILD_ROOT%{_libdir}/*.la
+%make_install
+find $RPM_BUILD_ROOT -name '*.la' -delete
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
@@ -114,7 +110,8 @@ rm $RPM_BUILD_ROOT%{_libdir}/*.la
 %postun gobject -p /sbin/ldconfig
 
 %files
-%doc AUTHORS BIBLIOGRAPHY BUGS COPYING COPYING-LGPL-2.1 COPYING-MPL-1.1 NEWS README
+%license COPYING COPYING-LGPL-2.1 COPYING-MPL-1.1
+%doc AUTHORS BIBLIOGRAPHY BUGS NEWS README
 %{_libdir}/libcairo.so.*
 %{_libdir}/libcairo-script-interpreter.so.*
 %{_bindir}/cairo-sphinx
@@ -170,6 +167,14 @@ rm $RPM_BUILD_ROOT%{_libdir}/*.la
 %{_libdir}/cairo/
 
 %changelog
+* Wed Apr 19 2017 Kalev Lember <klember@redhat.com> - 1.14.8-2
+- Remove all libtool .la files from cairo private directories as well
+- Resolves: #1386819
+
+* Thu Dec 08 2016 Kalev Lember <klember@redhat.com> - 1.14.8-1
+- Update to 1.14.8
+- Resolves: #1386819
+
 * Tue Apr 28 2015 Benjamin Otte <otte@redhat.com> - 1.14.2-1
 - Update to 1.14.2
 - Resolves: #1174435

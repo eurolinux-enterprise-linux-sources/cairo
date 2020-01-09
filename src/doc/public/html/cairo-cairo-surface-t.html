@@ -722,12 +722,12 @@ associated with the surface.</p>
 <a name="cairo-surface-flush"></a><h3>cairo_surface_flush ()</h3>
 <pre class="programlisting"><span class="returnvalue">void</span>
 cairo_surface_flush (<em class="parameter"><code><a class="link" href="cairo-cairo-surface-t.html#cairo-surface-t" title="cairo_surface_t"><span class="type">cairo_surface_t</span></a> *surface</code></em>);</pre>
-<p>Do any pending drawing for the surface and also restore any
-temporary modifications cairo has made to the surface's
-state. This function must be called before switching from
-drawing on the surface with cairo to drawing on it directly
-with native APIs. If the surface doesn't support direct access,
-then this function does nothing.</p>
+<p>Do any pending drawing for the surface and also restore any temporary
+modifications cairo has made to the surface's state. This function
+must be called before switching from drawing on the surface with
+cairo to drawing on it directly with native APIs, or accessing its
+memory outside of Cairo. If the surface doesn't support direct
+access, then this function does nothing.</p>
 <div class="refsect3">
 <a name="id-1.5.3.7.9.5"></a><h4>Parameters</h4>
 <div class="informaltable"><table width="100%" border="0">

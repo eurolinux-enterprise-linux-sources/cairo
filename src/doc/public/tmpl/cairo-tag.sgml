@@ -1,5 +1,5 @@
 <!-- ##### SECTION Title ##### -->
-cairo-quartz-fonts
+cairo-tag
 
 <!-- ##### SECTION Short_Description ##### -->
 
@@ -20,28 +20,36 @@ cairo-quartz-fonts
 <!-- ##### SECTION Image ##### -->
 
 
-<!-- ##### MACRO CAIRO_HAS_QUARTZ_FONT ##### -->
+<!-- ##### MACRO CAIRO_TAG_DEST ##### -->
 <para>
 
 </para>
 
 
 
-<!-- ##### FUNCTION cairo_quartz_font_face_create_for_cgfont ##### -->
+<!-- ##### MACRO CAIRO_TAG_LINK ##### -->
 <para>
 
 </para>
 
-@font: 
-@Returns: 
 
 
-<!-- ##### FUNCTION cairo_quartz_font_face_create_for_atsu_font_id ##### -->
+<!-- ##### FUNCTION cairo_tag_begin ##### -->
 <para>
 
 </para>
 
-@font_id: 
-@Returns: 
+@cr: 
+@tag_name: 
+@attributes: 
+
+
+<!-- ##### FUNCTION cairo_tag_end ##### -->
+<para>
+
+</para>
+
+@cr: 
+@tag_name: 
 
 
