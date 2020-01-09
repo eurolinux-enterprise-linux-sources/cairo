@@ -5,7 +5,7 @@
 Summary:	A 2D graphics library
 Name:		cairo
 Version:	1.8.8
-Release:	3.1%{?dist}
+Release:	6%{?dist}
 URL:		http://cairographics.org
 Source0:	http://cairographics.org/releases/%{name}-%{version}.tar.gz
 License:	LGPLv2 or MPLv1.1
@@ -22,6 +22,8 @@ BuildRequires: freetype-devel >= %{freetype_version}
 BuildRequires: fontconfig-devel >= %{fontconfig_version}
 
 Patch0: cairo-1.8.6-repeat-modes.patch
+Patch1: 0001-Type-1-subset-Don-t-add-a-new-line-when-in-binary-mo.patch
+Patch2: cairo-1.8.8-dont-crash-on-empty-surface.patch
 
 %description
 Cairo is a 2D graphics library designed to provide high-quality display
@@ -54,6 +56,8 @@ needed for developing software which uses the cairo graphics library.
 %prep
 %setup -q
 %patch0 -p1 -b .repeat-modes
+%patch1 -p1 -b .binary-pdf
+%patch2 -p1 -b .empty-surface
 
 %build
 %configure --disable-static 	\
@@ -92,6 +96,18 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/gtk-doc/html/cairo
 
 %changelog
+* Tue Jun 09 2015 Benjamin Otte <oteee@redhat.com> - 1.8.8-6
+- Improve previous patch
+Resolves: #1222773
+
+* Mon May 18 2015 Benjamin Otte <oteee@redhat.com> - 1.8.8-5
+- Don't crash on empty surface
+Resolves: #1222773
+
+* Fri May 01 2015 Benjamin Otte <oteee@redhat.com> - 1.8.8-4
+- Fix wrong PDF output when embedding binary fonts
+Resolves: #1220367
+
 * Mon Nov 30 2009 Dennis Gregorovic <dgregor@redhat.com> - 1.8.8-3.1
 - Rebuilt for RHEL 6
 
