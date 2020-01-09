@@ -1,0 +1,126 @@
+From bf597b89288b6271f56031d5a20bfaf59f146d4c Mon Sep 17 00:00:00 2001
+From: Bryce Harrington <bryce@bryceharrington.org>
+Date: Tue, 16 Oct 2018 09:13:23 -0700
+Subject: [PATCH] Revert "Correctly decode Adobe CMYK JPEGs in PDF export"
+
+From further testing and investigation it appears that many PDF viewers
+already have a workaround to invert Adobe CMYK JPEGs, so our generated
+PDFs display incorrectly with those viewers due to double-inversion.
+
+Further investigation will be needed to find a better solution that
+doesn't cause regression for some PDF viewers; perhaps PDF viewers that
+lack this inversion workaround should be changed to include it.  For now
+we'll drop the patch to avoid shipping the regression in 1.16.0.
+
+This reverts commit b207a932a2d3740984319dffd58a0791580597cd.
+
+Reference: https://bugs.freedesktop.org/show_bug.cgi?id=97612
+Fixes: https://gitlab.freedesktop.org/cairo/cairo/issues/156
+---
+ src/cairo-image-info-private.h |  1 -
+ src/cairo-image-info.c         | 21 ---------------------
+ src/cairo-pdf-surface.c        |  2 --
+ 3 files changed, 24 deletions(-)
+
+diff --git a/src/cairo-image-info-private.h b/src/cairo-image-info-private.h
+index 99cbbcc02..e64928e40 100644
+--- a/src/cairo-image-info-private.h
++++ b/src/cairo-image-info-private.h
+@@ -43,7 +43,6 @@ typedef struct _cairo_image_info {
+     int		 height;
+     int		 num_components;
+     int		 bits_per_component;
+-    int		 is_adobe_jpeg;
+ } cairo_image_info_t;
+ 
+ cairo_private cairo_int_status_t
+diff --git a/src/cairo-image-info.c b/src/cairo-image-info.c
+index 3b4cf6edb..d147e3723 100644
+--- a/src/cairo-image-info.c
++++ b/src/cairo-image-info.c
+@@ -67,9 +67,6 @@
+ #define SOF14 0xce
+ #define SOF15 0xcf
+ 
+-/* Start of tag markers */
+-#define APP14 0xee	/* Adobe */
+-
+ static const unsigned char *
+ _jpeg_skip_segment (const unsigned char *p)
+ {
+@@ -97,8 +94,6 @@ _cairo_image_info_get_jpeg_info (cairo_image_info_t	*info,
+ {
+     const unsigned char *p = data;
+ 
+-    info->is_adobe_jpeg = FALSE;
+-
+     while (p + 1 < data + length) {
+ 	if (*p != 0xff)
+ 	    return CAIRO_INT_STATUS_UNSUPPORTED;
+@@ -136,18 +131,6 @@ _cairo_image_info_get_jpeg_info (cairo_image_info_t	*info,
+ 	    _jpeg_extract_info (info, p);
+ 	    return CAIRO_STATUS_SUCCESS;
+ 
+-	case APP14:
+-	    /* "Adobe" tags segment indicates inverted CMYK (in
+-	     * CMYK images). */
+-	    if (p + 12 > data + length)
+-		return CAIRO_INT_STATUS_UNSUPPORTED;
+-
+-	    info->is_adobe_jpeg =
+-		(0 == strncmp((const char *)(p + 3), "Adobe", 5));
+-
+-	    p = _jpeg_skip_segment(p);
+-	    break;
+-
+ 	default:
+ 	    if (*p >= RST_begin && *p <= RST_end) {
+ 		p++;
+@@ -223,7 +206,6 @@ _jpx_extract_info (const unsigned char *p, cairo_image_info_t *info)
+     info->width = get_unaligned_be32 (p + 4);
+     info->num_components = (p[8] << 8) + p[9];
+     info->bits_per_component = p[10];
+-    info->is_adobe_jpeg = FALSE;
+ }
+ 
+ cairo_int_status_t
+@@ -301,8 +283,6 @@ _cairo_image_info_get_png_info (cairo_image_info_t     *info,
+     p += 4;
+     info->height = get_unaligned_be32 (p);
+ 
+-    info->is_adobe_jpeg = FALSE;
+-
+     return CAIRO_STATUS_SUCCESS;
+ }
+ 
+@@ -415,7 +395,6 @@ _jbig2_extract_info (cairo_image_info_t *info, const unsigned char *p)
+     info->height = get_unaligned_be32 (p + 4);
+     info->num_components = 1;
+     info->bits_per_component = 1;
+-    info->is_adobe_jpeg = FALSE;
+ }
+ 
+ cairo_int_status_t
+diff --git a/src/cairo-pdf-surface.c b/src/cairo-pdf-surface.c
+index ab6781340..7eb61aa1e 100644
+--- a/src/cairo-pdf-surface.c
++++ b/src/cairo-pdf-surface.c
+@@ -3169,7 +3169,6 @@ _cairo_pdf_surface_emit_jpeg_image (cairo_pdf_surface_t              *surface,
+ 						 "   /Height %d\n"
+ 						 "   /ColorSpace %s\n"
+ 						 "   /Interpolate %s\n"
+-						 "%s"
+ 						 "   /BitsPerComponent %d\n"
+ 						 "%s"
+ 						 "   /Filter /DCTDecode\n",
+@@ -3177,7 +3176,6 @@ _cairo_pdf_surface_emit_jpeg_image (cairo_pdf_surface_t              *surface,
+ 						 info.height,
+ 						 colorspace,
+ 						 surface_entry->interpolate ? "true" : "false",
+-						 info.is_adobe_jpeg && info.num_components == 4 ? "   /Decode [ 1 0 1 0 1 0 1 0 ]\n" : "",
+ 						 info.bits_per_component,
+ 						 smask_buf);
+     }
+-- 
+2.20.1
+

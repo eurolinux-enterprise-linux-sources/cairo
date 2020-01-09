@@ -11,7 +11,7 @@
 
 Name:		cairo
 Version:	1.15.12
-Release:	3%{?dist}
+Release:	4%{?dist}
 Summary:	A 2D graphics library
 
 License:	LGPLv2 or MPLv1.1
@@ -20,6 +20,7 @@ Source0:	http://cairographics.org/snapshots/%{name}-%{version}.tar.xz
 
 # Backported from upstream
 Patch0:         0001-Fix-assertion-failure-in-the-freetype-backend.patch
+Patch1:         0001-Revert-Correctly-decode-Adobe-CMYK-JPEGs-in-PDF-expo.patch
 
 Patch3:         cairo-multilib.patch
 
@@ -178,6 +179,10 @@ find $RPM_BUILD_ROOT -name '*.la' -delete
 %{_libdir}/cairo/
 
 %changelog
+* Mon Mar 18 2019 Marek Kasik <mkasik@redhat.com> - 1.15.12-4
+- Do not inverse colors of Adobe CMYK JPEGs in PDF export
+- Resolves: #1688396
+
 * Mon Sep 10 2018 Kalev Lember <klember@redhat.com> - 1.15.12-3
 - Rebuild against new freetype
 - Resolves: #1625906
