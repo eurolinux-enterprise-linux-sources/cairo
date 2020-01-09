@@ -1,0 +1,181 @@
+From 97f6e2005d9cbc9c9dd7cc21445df7c08e084c83 Mon Sep 17 00:00:00 2001
+From: Marek Kasik <mkasik@redhat.com>
+Date: Thu, 9 Jan 2014 17:28:32 +0100
+Subject: [PATCH] font: Generate PDFs with correct font names
+
+Escape PostScript names of loaded fonts. These can not
+contain white spaces and delimiter characters when saving
+them to a PostScript file or a PDF file.
+---
+ src/cairo-cff-subset.c                  |  2 ++
+ src/cairo-scaled-font-subsets-private.h | 15 +++++++++++++
+ src/cairo-scaled-font-subsets.c         | 40 +++++++++++++++++++++++++++++++++
+ src/cairo-truetype-subset.c             | 35 +++--------------------------
+ src/cairo-type1-subset.c                |  9 +++-----
+ 5 files changed, 63 insertions(+), 38 deletions(-)
+
+diff --git a/src/cairo-cff-subset.c b/src/cairo-cff-subset.c
+index c420bd4..1ae032c 100644
+--- a/src/cairo-cff-subset.c
++++ b/src/cairo-cff-subset.c
+@@ -899,6 +899,8 @@ cairo_cff_font_read_name (cairo_cff_font_t *font)
+ 
+         memcpy (font->ps_name, p, len);
+         font->ps_name[len] = 0;
++
++        status = _cairo_escape_ps_name (&font->ps_name);
+     }
+     cff_index_fini (&index);
+ 
+diff --git a/src/cairo-scaled-font-subsets-private.h b/src/cairo-scaled-font-subsets-private.h
+index dd19962..866e63d 100644
+--- a/src/cairo-scaled-font-subsets-private.h
++++ b/src/cairo-scaled-font-subsets-private.h
+@@ -715,6 +715,21 @@ _cairo_truetype_get_style (cairo_scaled_font_t  	 *scaled_font,
+ 			   cairo_bool_t			 *bold,
+ 			   cairo_bool_t			 *italic);
+ 
++/**
++ * _cairo_escape_ps_name:
++ * @ps_name: returns the PostScript name with all invalid characters escaped
++ *
++ * Ensure that PostSript name is a valid PDF/PostSript name object.
++ * In PDF names are treated as UTF8 and non ASCII bytes, ' ',
++ * and '#' are encoded as '#' followed by 2 hex digits that
++ * encode the byte.
++ *
++ * Return value: %CAIRO_STATUS_SUCCESS if successful. Possible errors include
++ * %CAIRO_STATUS_NO_MEMORY.
++ **/
++cairo_private cairo_int_status_t
++_cairo_escape_ps_name (char **ps_name);
++
+ #endif /* CAIRO_HAS_FONT_SUBSET */
+ 
+ #endif /* CAIRO_SCALED_FONT_SUBSETS_PRIVATE_H */
+diff --git a/src/cairo-scaled-font-subsets.c b/src/cairo-scaled-font-subsets.c
+index e78e0c2..2121761 100644
+--- a/src/cairo-scaled-font-subsets.c
++++ b/src/cairo-scaled-font-subsets.c
+@@ -1256,4 +1256,44 @@ CLEANUP_HASH:
+     return status;
+ }
+ 
++cairo_int_status_t
++_cairo_escape_ps_name (char **ps_name)
++{
++    cairo_status_t status = CAIRO_STATUS_SUCCESS;
++
++    /* Ensure PS name is a valid PDF/PS name object. In PDF names are
++     * treated as UTF8 and non ASCII bytes, ' ', and '#' are encoded
++     * as '#' followed by 2 hex digits that encode the byte. By also
++     * encoding the characters in the reserved string we ensure the
++     * name is also PS compatible. */
++    if (*ps_name) {
++	static const char *reserved = "()<>[]{}/%#\\";
++	char buf[128]; /* max name length is 127 bytes */
++	char *src = *ps_name;
++	char *dst = buf;
++
++	while (*src && dst < buf + 127) {
++	    unsigned char c = *src;
++	    if (c < 0x21 || c > 0x7e || strchr (reserved, c)) {
++		if (dst + 4 > buf + 127)
++		    break;
++
++		snprintf (dst, 4, "#%02X", c);
++		src++;
++		dst += 3;
++	    } else {
++		*dst++ = *src++;
++	    }
++	}
++	*dst = 0;
++	free (*ps_name);
++	*ps_name = strdup (buf);
++	if (*ps_name == NULL) {
++	    status = _cairo_error (CAIRO_STATUS_NO_MEMORY);
++	}
++    }
++
++    return status;
++}
++
+ #endif /* CAIRO_HAS_FONT_SUBSET */
+diff --git a/src/cairo-truetype-subset.c b/src/cairo-truetype-subset.c
+index 18ee685..3d55fef 100644
+--- a/src/cairo-truetype-subset.c
++++ b/src/cairo-truetype-subset.c
+@@ -1566,38 +1566,9 @@ _cairo_truetype_read_font_name (cairo_scaled_font_t  	 *scaled_font,
+ 
+     free (name);
+ 
+-    /* Ensure PS name is a valid PDF/PS name object. In PDF names are
+-     * treated as UTF8 and non ASCII bytes, ' ', and '#' are encoded
+-     * as '#' followed by 2 hex digits that encode the byte. By also
+-     * encoding the characters in the reserved string we ensure the
+-     * name is also PS compatible. */
+-    if (ps_name) {
+-	static const char *reserved = "()<>[]{}/%#\\";
+-	char buf[128]; /* max name length is 127 bytes */
+-	char *src = ps_name;
+-	char *dst = buf;
+-
+-	while (*src && dst < buf + 127) {
+-	    unsigned char c = *src;
+-	    if (c < 0x21 || c > 0x7e || strchr (reserved, c)) {
+-		if (dst + 4 > buf + 127)
+-		    break;
+-
+-		snprintf (dst, 4, "#%02X", c);
+-		src++;
+-		dst += 3;
+-	    } else {
+-		*dst++ = *src++;
+-	    }
+-	}
+-	*dst = 0;
+-	free (ps_name);
+-	ps_name = strdup (buf);
+-	if (ps_name == NULL) {
+-	    status = _cairo_error (CAIRO_STATUS_NO_MEMORY);
+-	    goto fail;
+-	}
+-    }
++    status = _cairo_escape_ps_name (&ps_name);
++    if (unlikely(status))
++	goto fail;
+ 
+     *ps_name_out = ps_name;
+     *font_name_out = family_name;
+diff --git a/src/cairo-type1-subset.c b/src/cairo-type1-subset.c
+index 99830b4..3b2cc0a 100644
+--- a/src/cairo-type1-subset.c
++++ b/src/cairo-type1-subset.c
+@@ -407,6 +407,7 @@ cairo_type1_font_subset_get_fontname (cairo_type1_font_subset_t *font)
+     const char *start, *end, *segment_end;
+     char *s;
+     int i;
++    cairo_status_t status;
+ 
+     segment_end = font->header_segment + font->header_segment_size;
+     start = find_token (font->header_segment, segment_end, "/FontName");
+@@ -447,13 +448,9 @@ cairo_type1_font_subset_get_fontname (cairo_type1_font_subset_t *font)
+     if (unlikely (font->base.base_font == NULL))
+ 	return _cairo_error (CAIRO_STATUS_NO_MEMORY);
+ 
+-    s = font->base.base_font;
+-    while (*s && !is_ps_delimiter(*s))
+-	s++;
+-
+-    *s = 0;
++    status = _cairo_escape_ps_name (&font->base.base_font);
+ 
+-    return CAIRO_STATUS_SUCCESS;
++    return status;
+ }
+ 
+ static cairo_status_t
+-- 
+1.8.4.2
+
